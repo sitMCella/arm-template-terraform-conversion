@@ -1,6 +1,6 @@
 # Example Terraform Project for Azure Firewall Policy
 
-The following is an example of Terraform Project that provisions a set of IP Groups, and one Azure Firewall Policy with the rule collections generated from the ARM Template.
+The following Terraform Project provisions a set of IP Groups, and one Azure Firewall Policy with the rule collections generated from an ARM Template JSON file.
 
 ## Setup
 
@@ -9,15 +9,15 @@ Execute the the following commands in order to generate the Terraform modules fo
 ```$bash
 cd ../../../azure_firewall_policy
 chmod +x firewall-policy-conversion.sh
-cp examples/azure_firewall_policy/ip_groups_mapping.csv .
-./firewall-policy-conversion.sh -p examples/azure_firewall_policy/firewall_policy_arm_template_example.json
-cd examples/azure_firewall_policy/terraform_project
+cp ../examples/azure_firewall_policy/ip_groups_mapping.csv .
+./firewall-policy-conversion.sh -p ../examples/azure_firewall_policy/firewall_policy_arm_template_example.json
+cd ../examples/azure_firewall_policy/terraform_project
 ```
 
 Copy the generated Terraform modules in the Terraform project.
 
 ```$bash
-cp ../../../azure_firewall_policy/firewall-policy-terraform-module/* networking/westeurope/modules/
+cp -R ../../../azure_firewall_policy/firewall-policy-terraform-module/* networking/westeurope/modules/
 ```
 
 ## Configuration
