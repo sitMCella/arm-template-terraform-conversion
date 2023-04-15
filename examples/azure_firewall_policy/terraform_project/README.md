@@ -37,25 +37,27 @@ Use the following template for the file "secrets/main.json".
 }
 ```
 
+Define the Subscription ID in the file "networking/westeurope/providers.tf".
+
 ## Development
 
 ### Initialize the Terraform Project
 
 ```$bash
 cd networking/westeurope
-terraform init -backend-config="../../secret/main.json" -reconfigure
+terraform init -backend-config="../../secrets/main.json" -reconfigure
 ```
 
 ### Verify the Terraform Plan
 
 ```$bash
 cd networking/westeurope
-terraform plan -var-file="../../secret/main.json"
+terraform plan -var-file="../../secrets/main.json"
 ```
 
 ### Provision the Terraform Plan
 
 ```$bash
 cd networking/westeurope
-terraform apply -var-file="../../secret/main.json" -auto-approve
+terraform apply -var-file="../../secrets/main.json" -auto-approve
 ```
