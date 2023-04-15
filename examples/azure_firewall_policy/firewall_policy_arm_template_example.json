@@ -1,0 +1,454 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "firewallPolicies_afwp_networking_prod_westeurope_name": {
+            "defaultValue": "afwp-networking-prod-westeurope",
+            "type": "String"
+        },
+        "ipGroups_ipgroup_onprem_prod_westeurope_externalid": {
+            "defaultValue": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-prod-westeurope/providers/Microsoft.Network/ipGroups/ipgroup-onprem-prod-westeurope",
+            "type": "String"
+        },
+        "ipGroups_ipgroup_azure_prod_westeurope_externalid": {
+            "defaultValue": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-prod-westeurope/providers/Microsoft.Network/ipGroups/ipgroup-azure-prod-westeurope",
+            "type": "String"
+        },
+        "ipGroups_ipgroup_workload1_dev_westeurope_externalid": {
+            "defaultValue": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-prod-westeurope/providers/Microsoft.Network/ipGroups/ipgroup-workload1-dev-westeurope",
+            "type": "String"
+        },
+        "ipGroups_ipgroup_workload3_prod_westeurope_externalid": {
+            "defaultValue": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-prod-westeurope/providers/Microsoft.Network/ipGroups/ipgroup-workload3-dev-westeurope",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/firewallPolicies",
+            "apiVersion": "2022-09-01",
+            "name": "[parameters('firewallPolicies_afwp_networking_prod_westeurope_name')]",
+            "location": "westeurope",
+            "tags": {
+                "CostCenter": "123",
+                "Environment": "Production"
+            },
+            "properties": {
+                "sku": {
+                    "tier": "Standard"
+                },
+                "threatIntelMode": "Alert",
+                "dnsSettings": {
+                    "servers": [
+                        "168.63.129.16"
+                    ],
+                    "enableProxy": true
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload1-dev-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 1000,
+                "ruleCollections": [
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-100-Inbound",
+                                "ipProtocols": [
+                                    "TCP",
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_onprem_prod_westeurope_externalid')]",
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload1_dev_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "100"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-200-Outbound",
+                                "ipProtocols": [
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload1_dev_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]",
+                                    "[parameters('ipGroups_ipgroup_onprem_prod_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "200"
+                                ]
+                            }
+                        ],
+                        "name": "workload1-dev-westeurope",
+                        "priority": 1000
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload2-prod-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 1500,
+                "ruleCollections": [
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-80-Inbound",
+                                "ipProtocols": [
+                                    "TCP",
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload3_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [
+                                    "10.1.36.30"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "80"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-100-Outbound",
+                                "ipProtocols": [
+                                    "TCP",
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [
+                                    "10.1.36.30"
+                                ],
+                                "sourceIpGroups": [],
+                                "destinationAddresses": [
+                                    "10.128.45.170",
+                                    "10.128.45.171",
+                                    "10.128.45.172"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "100"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-All-Inbound",
+                                "ipProtocols": [
+                                    "Any"
+                                ],
+                                "sourceAddresses": [
+                                    "10.128.45.170",
+                                    "10.128.45.171",
+                                    "10.128.45.172"
+                                ],
+                                "sourceIpGroups": [],
+                                "destinationAddresses": [
+                                    "10.1.36.32"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "*"
+                                ]
+                            }
+                        ],
+                        "name": "workload2-prod-westeurope",
+                        "priority": 1500
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload3-prod-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 2000,
+                "ruleCollections": [
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-4000-Outbound",
+                                "ipProtocols": [
+                                    "TCP",
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload3_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [
+                                    "10.128.45.170",
+                                    "10.128.45.171"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "4000"
+                                ]
+                            }
+                        ],
+                        "name": "workload3-prod-westeurope",
+                        "priority": 2000
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload4-prod-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 3000,
+                "ruleCollections": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload5-prod-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 4000,
+                "ruleCollections": [
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                        ],
+                        "name": "workload5-prod-westeurope",
+                        "priority": 4000
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-azure-prod-westeurope')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('firewallPolicies_afwp_networking_prod_westeurope_name'))]"
+            ],
+            "properties": {
+                "priority": 5000,
+                "ruleCollections": [
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-53-Outbound",
+                                "ipProtocols": [
+                                    "UDP",
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [
+                                    "*"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "53"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-123-Outbound",
+                                "ipProtocols": [
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [
+                                    "*"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "123"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-ICMP-Outbound",
+                                "ipProtocols": [
+                                    "ICMP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [
+                                    "*"
+                                ],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "*"
+                                ]
+                            }
+                        ],
+                        "name": "azure-internet-prod-westeurope",
+                        "priority": 5000
+                    },
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-53-Outbound",
+                                "ipProtocols": [
+                                    "UDP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "53"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-ICMP-Inbound",
+                                "ipProtocols": [
+                                    "ICMP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "*"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-443-Inbound",
+                                "ipProtocols": [
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "443"
+                                ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-3389-Inbound",
+                                "ipProtocols": [
+                                    "UDP",
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationFqdns": [],
+                                "destinationPorts": [
+                                    "3389"
+                                ]
+                            }
+                        ],
+                        "name": "azure-azure-prod-westeurope",
+                        "priority": 5050
+                    }
+                ]
+            }
+        }
+    ]
+}

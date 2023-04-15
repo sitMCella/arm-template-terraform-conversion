@@ -1,0 +1,4 @@
+"[parameters('ipGroups_ipgroup_onprem_prod_westeurope_externalid')]";var.ipgroup_onprem_prod_westeurope_id
+"[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]";var.ipgroup_azure_prod_westeurope_id
+"[parameters('ipGroups_ipgroup_workload1_dev_westeurope_externalid')]";var.ipgroup_workload1_dev_westeurope_id
+"[parameters('ipGroups_ipgroup_workload3_prod_westeurope_externalid')]";var.ipgroup_workload3_prod_westeurope_id
