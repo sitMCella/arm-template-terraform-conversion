@@ -7,5 +7,5 @@ The Terraform modules for the rule collection groups of the Azure Firewall Polic
 Read the [README.md](https://github.com/sitMCella/arm-template-terraform-conversion/blob/main/azure_firewall_policy/README.md) for the 
 commands to execute in order to generate the Terraform modules for the rule collection groups of the Azure Firewall Policy.
 
-Read the [README.md](https://github.com/sitMCella/arm-template-terraform-conversion/blob/main/examples/azure_firewall_policy/README.md) for 
+Read the [README.md](https://github.com/sitMCella/arm-template-terraform-conversion/blob/main/examples/azure_firewall_policy/terraform_project/README.md) for 
 configuring the example Terraform project.
