@@ -18,13 +18,15 @@ variable "application_rule_collection" {
     action   = string
     priority = number
     rule = list(object({
-      name = string
+      name                  = string
+      source_addresses      = list(string)
+      source_ip_groups      = list(string)
       protocols = list(object({
         type = string
         port = string
       }))
-      source_addresses  = list(string)
-      destination_fqdns = list(string)
+      destination_fqdns     = list(string)
+      destination_fqdn_tags = list(string)
     }))
   }))
 
@@ -63,11 +65,12 @@ variable "network_rule_collection" {
     rule = list(object({
       name                  = string
       protocols             = list(string)
-      destination_ports     = list(string)
       source_addresses      = list(string)
       source_ip_groups      = list(string)
+      destination_ports     = list(string)
       destination_addresses = list(string)
       destination_ip_groups = list(string)
+      destination_fqdns     = list(string)
     }))
   }))
 

@@ -106,7 +106,7 @@
                                 ]
                             }
                         ],
-                        "name": "workload1-dev-westeurope",
+                        "name": "workload1-network-dev-westeurope",
                         "priority": 1000
                     }
                 ]
@@ -193,8 +193,41 @@
                                 ]
                             }
                         ],
-                        "name": "workload2-prod-westeurope",
+                        "name": "workload2-network-prod-westeurope",
                         "priority": 1500
+                    },
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "ApplicationRule",
+                                "name": "Allow-azure-monitor-Outbound",
+                                "protocols": [
+                                    {
+                                        "protocolType": "Https",
+                                        "port": 443
+                                    }
+                                ],
+                                "fqdnTags": [],
+                                "webCategories": [],
+                                "targetFqdns": [
+                                    "*.ods.opinsights.azure.com", "*.oms.opinsights.azure.com", "*.blob.core.windows.net", "global.handler.control.monitor.azure.com"
+                                ],
+                                "targetUrls": [],
+                                "terminateTLS": false,
+                                "sourceAddresses": [
+                                    "10.1.36.30"
+                                ],
+                                "destinationAddresses": [],
+                                "sourceIpGroups": [],
+                                "httpHeadersToInsert": []
+                            }
+                        ],
+                        "name": "workload2-application-prod-westeurope",
+                        "priority": 1510
                     }
                 ]
             }
@@ -238,8 +271,64 @@
                                 ]
                             }
                         ],
-                        "name": "workload3-prod-westeurope",
+                        "name": "workload3-network-prod-westeurope",
                         "priority": 2000
+                    },
+                    {
+                        "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                        "action": {
+                            "type": "Allow"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "ApplicationRule",
+                                "name": "Allow-Office-Outbound",
+                                "protocols": [
+                                    {
+                                        "protocolType": "Https",
+                                        "port": 443
+                                    }
+                                ],
+                                "fqdnTags": [],
+                                "webCategories": [],
+                                "targetFqdns": [
+                                    "*.office.com"
+                                ],
+                                "targetUrls": [],
+                                "terminateTLS": false,
+                                "sourceAddresses": [],
+                                "destinationAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload3_prod_westeurope_externalid')]"
+                                ],
+                                "httpHeadersToInsert": []
+                            },
+                            {
+                                "ruleType": "ApplicationRule",
+                                "name": "Allow-Azure-Monitor-Outbound",
+                                "protocols": [
+                                    {
+                                        "protocolType": "Https",
+                                        "port": 443
+                                    }
+                                ],
+                                "fqdnTags": [
+                                    "Office365.Common.Default.Required"
+                                ],
+                                "webCategories": [],
+                                "targetFqdns": [],
+                                "targetUrls": [],
+                                "terminateTLS": false,
+                                "sourceAddresses": [],
+                                "destinationAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_workload3_prod_westeurope_externalid')]"
+                                ],
+                                "httpHeadersToInsert": []
+                            }
+                        ],
+                        "name": "workload3-application-prod-westeurope",
+                        "priority": 2010
                     }
                 ]
             }
@@ -355,9 +444,28 @@
                                 "destinationPorts": [
                                     "*"
                                 ]
+                            },
+                            {
+                                "ruleType": "NetworkRule",
+                                "name": "Allow-1433-Outbound",
+                                "ipProtocols": [
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [],
+                                "sourceIpGroups": [
+                                    "[parameters('ipGroups_ipgroup_azure_prod_westeurope_externalid')]"
+                                ],
+                                "destinationAddresses": [],
+                                "destinationIpGroups": [],
+                                "destinationFqdns": [
+                                    "sql-serv1.database.windows.net"
+                                ],
+                                "destinationPorts": [
+                                    "1433"
+                                ]
                             }
                         ],
-                        "name": "azure-internet-prod-westeurope",
+                        "name": "azure-to-internet-prod-westeurope",
                         "priority": 5000
                     },
                     {
@@ -444,7 +552,7 @@
                                 ]
                             }
                         ],
-                        "name": "azure-azure-prod-westeurope",
+                        "name": "azure-to-azure-prod-westeurope",
                         "priority": 5050
                     }
                 ]
