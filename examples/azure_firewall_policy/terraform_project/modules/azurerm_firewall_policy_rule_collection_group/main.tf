@@ -12,7 +12,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "firewall_policy_rule_c
       dynamic "rule" {
         for_each = application_rule_collection.value.rule
         content {
-          name = rule.value.name
+          name             = rule.value.name
+          source_addresses = rule.value.source_addresses
+          source_ip_groups = rule.value.source_ip_groups
           dynamic "protocols" {
             for_each = rule.value.protocols
             content {
@@ -20,8 +22,30 @@ resource "azurerm_firewall_policy_rule_collection_group" "firewall_policy_rule_c
               port = protocols.value.port
             }
           }
-          source_addresses  = rule.value.source_addresses
-          destination_fqdns = rule.value.destination_fqdns
+          destination_fqdns     = rule.value.destination_fqdns
+          destination_fqdn_tags = rule.value.destination_fqdn_tags
+        }
+      }
+    }
+  }
+
+  dynamic "network_rule_collection" {
+    for_each = var.network_rule_collection
+    content {
+      name     = network_rule_collection.value["name"]
+      action   = network_rule_collection.value["action"]
+      priority = network_rule_collection.value["priority"]
+      dynamic "rule" {
+        for_each = network_rule_collection.value.rule
+        content {
+          name                  = rule.value.name
+          protocols             = rule.value.protocols
+          source_addresses      = rule.value.source_addresses
+          source_ip_groups      = rule.value.source_ip_groups
+          destination_ports     = rule.value.destination_ports
+          destination_addresses = rule.value.destination_addresses
+          destination_ip_groups = rule.value.destination_ip_groups
+          destination_fqdns     = rule.value.destination_fqdns
         }
       }
     }
@@ -44,27 +68,6 @@ resource "azurerm_firewall_policy_rule_collection_group" "firewall_policy_rule_c
           destination_ports   = rule.value.destination_ports
           translated_address  = rule.value.translated_address
           translated_port     = rule.value.translated_port
-        }
-      }
-    }
-  }
-
-  dynamic "network_rule_collection" {
-    for_each = var.network_rule_collection
-    content {
-      name     = network_rule_collection.value["name"]
-      action   = network_rule_collection.value["action"]
-      priority = network_rule_collection.value["priority"]
-      dynamic "rule" {
-        for_each = network_rule_collection.value.rule
-        content {
-          name                  = rule.value.name
-          protocols             = rule.value.protocols
-          destination_ports     = rule.value.destination_ports
-          source_addresses      = rule.value.source_addresses
-          source_ip_groups      = rule.value.source_ip_groups
-          destination_addresses = rule.value.destination_addresses
-          destination_ip_groups = rule.value.destination_ip_groups
         }
       }
     }
