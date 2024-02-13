@@ -12,9 +12,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "firewall_policy_rule_c
       dynamic "rule" {
         for_each = application_rule_collection.value.rule
         content {
-          name                  = rule.value.name
-          source_addresses      = rule.value.source_addresses
-          source_ip_groups      = rule.value.source_ip_groups
+          name             = rule.value.name
+          source_addresses = rule.value.source_addresses
+          source_ip_groups = rule.value.source_ip_groups
           dynamic "protocols" {
             for_each = rule.value.protocols
             content {

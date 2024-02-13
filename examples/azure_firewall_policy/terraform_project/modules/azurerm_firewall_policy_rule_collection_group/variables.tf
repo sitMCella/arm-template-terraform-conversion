@@ -18,9 +18,9 @@ variable "application_rule_collection" {
     action   = string
     priority = number
     rule = list(object({
-      name                  = string
-      source_addresses      = list(string)
-      source_ip_groups      = list(string)
+      name             = string
+      source_addresses = list(string)
+      source_ip_groups = list(string)
       protocols = list(object({
         type = string
         port = string
