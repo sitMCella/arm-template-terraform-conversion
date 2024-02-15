@@ -27,29 +27,33 @@
     "resources": [
         {
             "type": "Microsoft.Network/firewallPolicies",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[parameters('firewallPolicies_afwp_networking_prod_westeurope_name')]",
             "location": "westeurope",
             "tags": {
-                "CostCenter": "123",
-                "Environment": "Production"
             },
             "properties": {
-                "sku": {
-                    "tier": "Standard"
-                },
-                "threatIntelMode": "Alert",
                 "dnsSettings": {
                     "servers": [
                         "168.63.129.16"
                     ],
                     "enableProxy": true
+                },
+                "sku": {
+                    "tier": "Standard"
+                },
+                "threatIntelMode": "Alert",
+                "threatIntelWhitelist": {
+                    "fqdns": [
+                    ],
+                    "ipAddresses": [
+                    ]
                 }
             }
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload1-dev-westeurope')]",
             "location": "westeurope",
             "dependsOn": [
@@ -114,7 +118,7 @@
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload2-prod-westeurope')]",
             "location": "westeurope",
             "dependsOn": [
@@ -234,7 +238,7 @@
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload3-prod-westeurope')]",
             "location": "westeurope",
             "dependsOn": [
@@ -335,7 +339,7 @@
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload4-prod-westeurope')]",
             "location": "westeurope",
             "dependsOn": [
@@ -348,7 +352,7 @@
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-workload5-prod-westeurope')]",
             "location": "westeurope",
             "dependsOn": [
@@ -372,7 +376,7 @@
         },
         {
             "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-            "apiVersion": "2022-09-01",
+            "apiVersion": "2023-06-01",
             "name": "[concat(parameters('firewallPolicies_afwp_networking_prod_westeurope_name'), '/rcg-azure-prod-westeurope')]",
             "location": "westeurope",
             "dependsOn": [

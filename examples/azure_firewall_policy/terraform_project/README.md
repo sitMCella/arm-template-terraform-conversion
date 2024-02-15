@@ -1,6 +1,6 @@
 # Example Terraform Project for Azure Firewall Policy
 
-The following Terraform Project provisions a set of IP Groups, and one Azure Firewall Policy with the rule collections generated from an ARM Template JSON file.
+The following Terraform Project provisions a set of IP Groups, and one Azure Firewall Policy with the rule collection groups generated from an ARM Template JSON file.
 
 ## Setup
 
@@ -37,7 +37,7 @@ Use the following template for the file "secrets/main.json".
 }
 ```
 
-Define the Subscription ID in the file "networking/westeurope/providers.tf".
+Define the Subscription ID parameter for the AzureRM provider in the file "networking/westeurope/providers.tf".
 
 ## Development
 
