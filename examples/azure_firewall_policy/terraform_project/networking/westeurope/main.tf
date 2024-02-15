@@ -3,6 +3,7 @@ module "rg-networking-prod-westeurope" {
 
   location = var.location
   name     = "rg-networking-prod-${var.location}"
+  tags     = {}
 }
 
 module "afwp-networking-prod-westeurope" {
@@ -11,12 +12,15 @@ module "afwp-networking-prod-westeurope" {
   location            = var.location
   name                = "afwp-networking-prod-${var.location}"
   resource_group_name = module.rg-networking-prod-westeurope.name
-  dns = [
-    {
-      proxy_enabled = true,
-      servers       = ["168.63.129.16"]
-    }
-  ]
+  dns = {
+    proxy_enabled = true,
+    servers       = ["168.63.129.16"]
+  }
+  threat_intelligence_allowlist = {
+    fqdns        = []
+    ip_addresses = []
+  }
+  tags = {}
 }
 
 module "ip-groups" {
@@ -24,6 +28,7 @@ module "ip-groups" {
 
   location            = var.location
   resource_group_name = module.rg-networking-prod-westeurope.name
+  tags                = {}
 }
 
 module "rcg-azure-prod-westeurope" {
@@ -63,7 +68,7 @@ module "rcg-workload4-prod-westeurope" {
 }
 
 module "rcg-workload5-prod-westeurope" {
-  source = "./modules/rcg_workload4_prod_westeurope"
+  source = "./modules/rcg_workload5_prod_westeurope"
 
   firewall_policy_id = module.afwp-networking-prod-westeurope.id
 }

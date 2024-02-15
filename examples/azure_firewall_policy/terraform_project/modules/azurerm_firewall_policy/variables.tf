@@ -10,19 +10,29 @@ variable "resource_group_name" {
   description = "(Required) The name of the Resource Group where the Firewall Policy should exist."
 }
 
-variable "dns" {
-  description = "(Required) A dns block as defined below."
-
-  type = list(object({
-    proxy_enabled = bool
-    servers       = list(string)
-  }))
-}
-
 variable "sku" {
   description = "(Optional) The SKU Tier of the Firewall Policy. Possible values are Standard, Premium and Basic."
 
   default = "Standard"
+}
+
+variable "dns" {
+  description = "(Optional) A dns block as defined below."
+
+  type = object({
+    proxy_enabled = bool
+    servers       = list(string)
+  })
+  default = null
+}
+
+variable "threat_intelligence_allowlist" {
+  description = "(Optional) A threat_intelligence_allowlist block as defined below."
+
+  type = object({
+    fqdns        = list(string)
+    ip_addresses = list(string)
+  })
 }
 
 variable "tags" {

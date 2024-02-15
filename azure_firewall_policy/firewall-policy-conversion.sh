@@ -23,6 +23,7 @@ network_rule_collections_file_name="network_rule_collections.txt"
 application_rule_collections_file_name="application_rule_collections.txt"
 rule_collection_file_name="rule_collection.txt"
 rules_file_name="rules.txt"
+ip_groups_rule_collection_group_file_name="ip_groups_rule_collection_group.txt"
 firewall_rule_type_file_name="firewall_rule_type.txt"
 firewall_policy_rule_collection_group_template_file_path="templates/firewall_policy_rule_collection_group_template.tf"
 rule_collection_template_file_path="templates/rule_collection_template.tf"
@@ -143,6 +144,8 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
         continue
     fi
 
+    echo "Rule Collection Group name: " $rule_collection_group_name
+
     # Initialize the temporary files for the Rule Collections
     if [ -f $network_rule_collections_file_name ] ; then
         rm $network_rule_collections_file_name
@@ -154,6 +157,10 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
     fi
     touch $application_rule_collections_file_name
     echo "  application_rule_collection = [" >> $application_rule_collections_file_name
+    if [ -f $ip_groups_rule_collection_group_file_name ] ; then
+        rm $ip_groups_rule_collection_group_file_name
+    fi
+    touch $ip_groups_rule_collection_group_file_name
 
     # Retrieve the priority of the Rule Collection Group
     rule_collection_group_priority=$(echo "$firewall_policy_rule_collection_group" | jq -rc .properties.priority)
@@ -199,7 +206,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
         echo "s/\${rule_collection_priority}/${rule_collection_priority}/" >> $replace_file_name
         echo "s/\${rule_collection_action}/${rule_collection_action}/" >> $replace_file_name
 
-        echo $rule_collection_name
+        echo "Rule Collection name: " $rule_collection_name
 
         sed -f $replace_file_name $rule_collection_template_file_path >> $rule_collection_file_name
         $(delete_replace_file)
@@ -233,6 +240,15 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 source_ip_groups=$(echo "$rule" | jq -rc .sourceIpGroups)
                 if [ $skip_ip_groups_mapping == false ]; then
                     replaceIpGroups $source_ip_groups
+                    ip_groups_list=$(echo $ip_groups | cut -c 2- | rev | cut -c 2- | rev)
+                    ip_groups_list=(${ip_groups_list//,/ })
+                    for i in "${ip_groups_list[@]}"; do
+                        ip_group_variable_name=$(echo $i | cut -c 5-)
+                        isInFile=$(cat $ip_groups_rule_collection_group_file_name | grep -c $ip_group_variable_name)
+                        if [[ isInFile -eq 0 ]]; then
+                            echo $ip_group_variable_name >> $ip_groups_rule_collection_group_file_name
+                        fi
+                    done
                 else
                     ip_groups=$source_ip_groups
                 fi
@@ -356,12 +372,29 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
 
     # Create the variables.tf file for the Terraform module of the Rule Collection Group
     terraform_module_variables_file_path="${firewall_policy_terraform_modules_output_directory}/${output_directory_name}/variables.tf"
-    cp $variables_template_file_path $terraform_module_variables_file_path
+    echo "s/\${variable_name}/firewall_policy_id/" > $replace_file_name
+    echo "s/\${description}/(Required) The ID of the Azure Firewall Policy./" >> $replace_file_name
+    sed -f $replace_file_name $variables_template_file_path >> $terraform_module_variables_file_path
+    $(delete_replace_file)
+
+    while IFS= read -r ip_group_variable_name; do
+        echo "s/\${variable_name}/${ip_group_variable_name}/" > $replace_file_name
+        ip_group_name=$(echo $ip_group_variable_name | rev | cut -c 4- | rev)
+        ip_group_name=${ip_group_name//_/-}
+        echo "s/\${description}/(Required) The ID of the IP Group ${ip_group_name}./" >> $replace_file_name
+        sed -f $replace_file_name $variables_template_file_path >> $terraform_module_variables_file_path
+        $(delete_replace_file)
+    done < $ip_groups_rule_collection_group_file_name
+
+    if [ -f $ip_groups_rule_collection_group_file_name ] ; then
+        rm $ip_groups_rule_collection_group_file_name
+    fi
 
     echo "}" >> $terraform_module_main_file_path
 done
 
 cd ${firewall_policy_terraform_modules_output_directory}
+echo "Format Terraform code..."
 find . -type f -name '*.tf' -print | uniq | xargs -n1 terraform fmt
 cd ..
 
