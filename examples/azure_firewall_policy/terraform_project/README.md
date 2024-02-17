@@ -1,6 +1,6 @@
 # Example Terraform Project for Azure Firewall Policy
 
-The following Terraform Project provisions a set of IP Groups, and one Azure Firewall Policy with the rule collection groups generated from an ARM Template JSON file.
+The following Terraform Project provisions a Resource Group that contains a set of IP Groups, and one Azure Firewall Policy with the rule collection groups generated from an ARM Template JSON file.
 
 ## Setup
 

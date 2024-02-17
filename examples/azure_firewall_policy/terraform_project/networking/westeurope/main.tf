@@ -16,10 +16,6 @@ module "afwp-networking-prod-westeurope" {
     proxy_enabled = true,
     servers       = ["168.63.129.16"]
   }
-  threat_intelligence_allowlist = {
-    fqdns        = []
-    ip_addresses = []
-  }
   tags = {}
 }
 

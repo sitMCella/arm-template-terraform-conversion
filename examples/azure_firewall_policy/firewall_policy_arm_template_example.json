@@ -112,6 +112,54 @@
                         ],
                         "name": "workload1-network-dev-westeurope",
                         "priority": 1000
+                    },
+                    {
+                        "ruleCollectionType": "FirewallPolicyNatRuleCollection",
+                        "action": {
+                            "type": "Dnat"
+                        },
+                        "rules": [
+                            {
+                                "ruleType": "NatRule",
+                                "name": "Allow-5432-Inbound",
+                                "translatedAddress": "10.1.72.5",
+                                "translatedPort": "5432",
+                                "ipProtocols": [
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [
+                                    "*"
+                                ],
+                                "sourceIpGroups": [],
+                                "destinationAddresses": [
+                                    "192.168.10.1"
+                                ],
+                                "destinationPorts": [
+                                    "5432"
+                                ]
+                            },
+                            {
+                                "ruleType": "NatRule",
+                                "name": "Allow-7000-Inbound",
+                                "translatedAddress": "10.1.72.6",
+                                "translatedPort": "3306",
+                                "ipProtocols": [
+                                    "TCP"
+                                ],
+                                "sourceAddresses": [
+                                    "*"
+                                ],
+                                "sourceIpGroups": [],
+                                "destinationAddresses": [
+                                    "192.168.10.1"
+                                ],
+                                "destinationPorts": [
+                                    "7000"
+                                ]
+                            }
+                        ],
+                        "name": "workload1-dnat-dev-westeurope",
+                        "priority": 950
                     }
                 ]
             }
