@@ -21,6 +21,7 @@ firewall_policy_rule_collection_group=""
 replace_file_name="replace.sed"
 network_rule_collections_file_name="network_rule_collections.txt"
 application_rule_collections_file_name="application_rule_collections.txt"
+dnat_rule_collections_file_name="dnat_rule_collections.txt"
 rule_collection_file_name="rule_collection.txt"
 rules_file_name="rules.txt"
 ip_groups_rule_collection_group_file_name="ip_groups_rule_collection_group.txt"
@@ -29,6 +30,7 @@ firewall_policy_rule_collection_group_template_file_path="templates/firewall_pol
 rule_collection_template_file_path="templates/rule_collection_template.tf"
 network_rule_template_file_path="templates/network_rule_template.tf"
 application_rule_template_file_path="templates/application_rule_template.tf"
+dnat_rule_template_file_path="templates/dnat_rule_template.tf"
 variables_template_file_path="templates/variables_template.tf"
 
 function display_help() {
@@ -46,10 +48,19 @@ function parse_rule_collection_group_name() {
     echo $rule_collection_group_name
 }
 
-function delete_replace_file() {
-    if [ -f $replace_file_name ] ; then
-        rm $replace_file_name
+function delete_file() {
+    if [ -f $1 ]; then
+        rm $1
     fi
+}
+
+function delete_replace_file() {
+    $(delete_file $replace_file_name)
+}
+
+function recreate_file() {
+    $(delete_file $1)
+    touch $1
 }
 
 # Replace the IP Group input parameter with the IP Group variable name
@@ -71,6 +82,19 @@ function replaceIpGroups() {
     input_ip_groups=$(replaceIpGroup $line $input_ip_groups);
   done < $ip_groups_mapping_file_name
   ip_groups=$input_ip_groups
+}
+
+function save_ip_group_variable_names() {
+    ip_groups=$1
+    ip_groups_list=$(echo $ip_groups | cut -c 2- | rev | cut -c 2- | rev)
+    ip_groups_list=(${ip_groups_list//,/ })
+    for i in "${ip_groups_list[@]}"; do
+        ip_group_variable_name=$(echo $i | cut -c 5-)
+        isInFile=$(cat $ip_groups_rule_collection_group_file_name | grep -c $ip_group_variable_name)
+        if [[ isInFile -eq 0 ]]; then
+            echo $ip_group_variable_name >> $ip_groups_rule_collection_group_file_name
+        fi
+    done
 }
 
 # Check arguments
@@ -147,20 +171,13 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
     echo "Rule Collection Group name: " $rule_collection_group_name
 
     # Initialize the temporary files for the Rule Collections
-    if [ -f $network_rule_collections_file_name ] ; then
-        rm $network_rule_collections_file_name
-    fi
-    touch $network_rule_collections_file_name
+    $(recreate_file $network_rule_collections_file_name)
     echo "  network_rule_collection = [" >> $network_rule_collections_file_name
-    if [ -f $application_rule_collections_file_name ] ; then
-        rm $application_rule_collections_file_name
-    fi
-    touch $application_rule_collections_file_name
+    $(recreate_file $application_rule_collections_file_name)
     echo "  application_rule_collection = [" >> $application_rule_collections_file_name
-    if [ -f $ip_groups_rule_collection_group_file_name ] ; then
-        rm $ip_groups_rule_collection_group_file_name
-    fi
-    touch $ip_groups_rule_collection_group_file_name
+    $(recreate_file $dnat_rule_collections_file_name)
+    echo "  nat_rule_collection = [" >> $dnat_rule_collections_file_name
+    $(recreate_file $ip_groups_rule_collection_group_file_name)
 
     # Retrieve the priority of the Rule Collection Group
     rule_collection_group_priority=$(echo "$firewall_policy_rule_collection_group" | jq -rc .properties.priority)
@@ -186,35 +203,27 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
     echo "$firewall_policy_rule_collection_group" | jq -rc .properties.ruleCollections[] | while IFS='' read rule_collection; do
         # Filter the Firewall Policy rule collections
         rule_collection_type=$(echo "$rule_collection" | jq -rc .ruleCollectionType)
-        if [[ $rule_collection_type != "FirewallPolicyFilterRuleCollection" ]]; then
+        if [[ $rule_collection_type != "FirewallPolicyFilterRuleCollection" && $rule_collection_type != "FirewallPolicyNatRuleCollection" ]]; then
             continue
         fi
         
         ((rule_collections_index++))
         # Initialize the temporary file for the firewall rule collection
-        if [ -f $rule_collection_file_name ] ; then
-            rm $rule_collection_file_name
-        fi
-        touch $rule_collection_file_name
+        $(recreate_file $rule_collection_file_name)
         
         # Create an item in the Rule Collection
         rule_collection_name=$(echo "$rule_collection" | jq -rc .name)
         rule_collection_priority=$(echo "$rule_collection" | jq -rc .priority)
         rule_collection_action=$(echo "$rule_collection" | jq -rc .action.type)
-        $(delete_replace_file)
-        echo "s/\${rule_collection_name}/${rule_collection_name}/" >> $replace_file_name
+        echo "s/\${rule_collection_name}/${rule_collection_name}/" > $replace_file_name
         echo "s/\${rule_collection_priority}/${rule_collection_priority}/" >> $replace_file_name
         echo "s/\${rule_collection_action}/${rule_collection_action}/" >> $replace_file_name
 
         echo "Rule Collection name: " $rule_collection_name
-
         sed -f $replace_file_name $rule_collection_template_file_path >> $rule_collection_file_name
         $(delete_replace_file)
 
-        if [ -f $rules_file_name ] ; then
-            rm $rules_file_name
-        fi
-        touch $rules_file_name
+        $(recreate_file $rules_file_name)
 
         # Loop through the rules in the rule collection
         rules_count=$(echo "$rule_collection" | jq '.rules | length')
@@ -226,7 +235,6 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
             # Filter the Network rules
             if [[ $rule_type == "NetworkRule" ]]; then
                 # Create one item in the "rule" array inside the network rule collection
-                $(delete_replace_file)
                 rule_name=$(echo "$rule" | jq -rc .name)
                 echo "s/\${rule_name}/${rule_name}/" > $replace_file_name
                 source_addresses=$(echo "$rule" | jq -rc .sourceAddresses)
@@ -240,15 +248,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 source_ip_groups=$(echo "$rule" | jq -rc .sourceIpGroups)
                 if [ $skip_ip_groups_mapping == false ]; then
                     replaceIpGroups $source_ip_groups
-                    ip_groups_list=$(echo $ip_groups | cut -c 2- | rev | cut -c 2- | rev)
-                    ip_groups_list=(${ip_groups_list//,/ })
-                    for i in "${ip_groups_list[@]}"; do
-                        ip_group_variable_name=$(echo $i | cut -c 5-)
-                        isInFile=$(cat $ip_groups_rule_collection_group_file_name | grep -c $ip_group_variable_name)
-                        if [[ isInFile -eq 0 ]]; then
-                            echo $ip_group_variable_name >> $ip_groups_rule_collection_group_file_name
-                        fi
-                    done
+                    $(save_ip_group_variable_names $ip_groups)
                 else
                     ip_groups=$source_ip_groups
                 fi
@@ -256,6 +256,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 destination_ip_groups=$(echo "$rule" | jq -rc .destinationIpGroups)
                 if [ $skip_ip_groups_mapping == false ]; then
                     replaceIpGroups $destination_ip_groups
+                    $(save_ip_group_variable_names $ip_groups)
                 else
                     ip_groups=$destination_ip_groups
                 fi
@@ -277,7 +278,6 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
             # Filter the Application rules
             if [[ $rule_type == "ApplicationRule" ]]; then
                 # Create one item in the "rule" array inside the application rule collection
-                $(delete_replace_file)
                 rule_name=$(echo "$rule" | jq -rc .name)
                 echo "s/\${rule_name}/${rule_name}/" > $replace_file_name
                 source_addresses=$(echo "$rule" | jq -rc .sourceAddresses)
@@ -286,6 +286,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 source_ip_groups=$(echo "$rule" | jq -rc .sourceIpGroups)
                 if [ $skip_ip_groups_mapping == false ]; then
                     replaceIpGroups $source_ip_groups
+                    $(save_ip_group_variable_names $ip_groups)
                 else
                     ip_groups=$source_ip_groups
                 fi
@@ -310,12 +311,49 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 sed -f $replace_file_name $application_rule_template_file_path >> $rules_file_name
                 $(delete_replace_file)
             fi
+            # Filter the dnat rules
+            if [[ $rule_type == "NatRule" ]]; then
+                # Create one item in the "rule" array inside the dnat rule collection
+                rule_name=$(echo "$rule" | jq -rc .name)
+                echo "s/\${rule_name}/${rule_name}/" > $replace_file_name
+                protocols=$(echo "$rule" | jq -rc .ipProtocols)
+                echo "s/\${protocols}/${protocols}/" >> $replace_file_name
+                source_addresses=$(echo "$rule" | jq -rc .sourceAddresses)
+                source_addresses=${source_addresses//\//\\/}
+                echo "s/\${source_addresses}/${source_addresses}/" >> $replace_file_name
+                source_ip_groups=$(echo "$rule" | jq -rc .sourceIpGroups)
+                if [ $skip_ip_groups_mapping == false ]; then
+                    replaceIpGroups $source_ip_groups
+                    $(save_ip_group_variable_names $ip_groups)
+                else
+                    ip_groups=$source_ip_groups
+                fi
+                echo "s/\${source_ip_groups}/${ip_groups}/" >> $replace_file_name
+                destination_addresses=$(echo "$rule" | jq -rc .destinationAddresses)
+                destination_addresses=${destination_addresses//\//\\/}
+                destination_address=$(echo $destination_addresses | cut -c 3- | rev | cut -c 3- | rev)
+                echo "s/\${destination_address}/${destination_address}/" >> $replace_file_name
+                destination_ports=$(echo "$rule" | jq -rc .destinationPorts)
+                echo "s/\${destination_ports}/${destination_ports}/" >> $replace_file_name
+                translated_address=$(echo "$rule" | jq -rc .translatedAddress)
+                echo "s/\${translated_address}/${translated_address}/" >> $replace_file_name
+                translated_port=$(echo "$rule" | jq -rc .translatedPort)
+                echo "s/\${translated_port}/${translated_port}/" >> $replace_file_name
+                
+                ((rules_index++))
+                if [ $rules_index -gt 1 ]; then
+                    echo "        }," >> $rules_file_name
+                fi
+                
+                sed -f $replace_file_name $dnat_rule_template_file_path >> $rules_file_name
+                $(delete_replace_file)
+            fi
         done
         if [ ! $rules_count == "0" ]; then
             echo "        }" >> $rules_file_name
         fi
-        firewall_rule_collection_type="null"
         # Retrieve the rule collection type
+        firewall_rule_collection_type="null"
         if [ -f $firewall_rule_type_file_name ]; then
            firewall_rule_collection_type=$(cat $firewall_rule_type_file_name)
         fi
@@ -341,30 +379,36 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
                 echo "    }" >> $application_rule_collections_file_name
             fi
         fi
-        if [ -f $rule_collection_file_name ]; then
-            rm $rule_collection_file_name
+        # Configure the array with the dnat rule collections
+        if [[ $firewall_rule_collection_type == "NatRule" ]]; then
+            cat $rule_collection_file_name >> $dnat_rule_collections_file_name
+            cat $rules_file_name >> $dnat_rule_collections_file_name
+            echo "      ]" >> $dnat_rule_collections_file_name
+            if [[ $rule_collections_index -lt $rule_collections_count ]]; then
+                echo "    }," >> $dnat_rule_collections_file_name
+            else
+                echo "    }" >> $dnat_rule_collections_file_name
+            fi
         fi
-        if [ -f $rules_file_name ]; then
-            rm $rules_file_name
-        fi
-        if [ -f $firewall_rule_type_file_name ]; then
-            rm $firewall_rule_type_file_name
-        fi
+        $(delete_file $rule_collection_file_name)
+        $(delete_file $rules_file_name)
+        $(delete_file $firewall_rule_type_file_name)
     done
 
     # Add the network rule collections to the main.tf file
     echo "  ]" >> $network_rule_collections_file_name
     cat $network_rule_collections_file_name >> $terraform_module_main_file_path
-    if [ -f $network_rule_collections_file_name ] ; then
-        rm $network_rule_collections_file_name
-    fi
+    $(delete_file $network_rule_collections_file_name)
 
     # Add the application rule collections to the main.tf file
     echo "  ]" >> $application_rule_collections_file_name
     cat $application_rule_collections_file_name >> $terraform_module_main_file_path
-    if [ -f $application_rule_collections_file_name ] ; then
-        rm $application_rule_collections_file_name
-    fi
+    $(delete_file $application_rule_collections_file_name)
+
+    # Add the dnat rule collections to the main.tf file
+    echo "  ]" >> $dnat_rule_collections_file_name
+    cat $dnat_rule_collections_file_name >> $terraform_module_main_file_path
+    $(delete_file $dnat_rule_collections_file_name)
 
     # Create the output.tf file for the Terraform module of the Rule Collection Group
     terraform_module_output_file_path="${firewall_policy_terraform_modules_output_directory}/${output_directory_name}/output.tf"
@@ -377,6 +421,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
     sed -f $replace_file_name $variables_template_file_path >> $terraform_module_variables_file_path
     $(delete_replace_file)
 
+    # Add the variables associated with the IP Groups used in the Rule Collection Group
     while IFS= read -r ip_group_variable_name; do
         echo "s/\${variable_name}/${ip_group_variable_name}/" > $replace_file_name
         ip_group_name=$(echo $ip_group_variable_name | rev | cut -c 4- | rev)
@@ -385,10 +430,7 @@ cat $firewall_policy_arm_template_path | jq -rc .resources[] | while IFS='' read
         sed -f $replace_file_name $variables_template_file_path >> $terraform_module_variables_file_path
         $(delete_replace_file)
     done < $ip_groups_rule_collection_group_file_name
-
-    if [ -f $ip_groups_rule_collection_group_file_name ] ; then
-        rm $ip_groups_rule_collection_group_file_name
-    fi
+    $(delete_file $ip_groups_rule_collection_group_file_name)
 
     echo "}" >> $terraform_module_main_file_path
 done

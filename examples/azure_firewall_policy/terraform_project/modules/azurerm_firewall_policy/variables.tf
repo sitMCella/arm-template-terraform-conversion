@@ -33,6 +33,7 @@ variable "threat_intelligence_allowlist" {
     fqdns        = list(string)
     ip_addresses = list(string)
   })
+  default = null
 }
 
 variable "tags" {

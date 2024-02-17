@@ -33,28 +33,6 @@ variable "application_rule_collection" {
   default = []
 }
 
-variable "nat_rule_collection" {
-  description = "(Optional) One or more nat_rule_collection blocks as defined below."
-
-  type = list(object({
-    name     = string
-    action   = string
-    priority = number
-    rule = list(object({
-      name                = string
-      protocols           = list(string)
-      source_addresses    = list(string)
-      source_ip_groups    = list(string)
-      destination_address = string
-      destination_ports   = list(string)
-      translated_address  = string
-      translated_port     = string
-    }))
-  }))
-
-  default = []
-}
-
 variable "network_rule_collection" {
   description = "(Optional) One or more network_rule_collection blocks as defined below."
 
@@ -71,6 +49,28 @@ variable "network_rule_collection" {
       destination_addresses = list(string)
       destination_ip_groups = list(string)
       destination_fqdns     = list(string)
+    }))
+  }))
+
+  default = []
+}
+
+variable "nat_rule_collection" {
+  description = "(Optional) One or more nat_rule_collection blocks as defined below."
+
+  type = list(object({
+    name     = string
+    action   = string
+    priority = number
+    rule = list(object({
+      name                = string
+      protocols           = list(string)
+      source_addresses    = list(string)
+      source_ip_groups    = list(string)
+      destination_address = string
+      destination_ports   = list(string)
+      translated_address  = string
+      translated_port     = string
     }))
   }))
 
